@@ -15,8 +15,13 @@
         gtag('config', 'UA-13243828-7');
     </script>
 
+    <link href="https://fonts.googleapis.com/css2?family=Sen&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
+      body {
+        font-family: 'Sen', sans-serif;
+      }
+
       .spinner {
           width: 20px;
           height: 20px;
@@ -51,15 +56,16 @@
   </head>
 
   <body>
-    <h1>COVID-19 Estimates of
-      <select name="measurementType" id="measurementType">
-        <option value="cases">ECDC Reported Cases</option>
-        <option value="deaths">ECDC Reported Deaths</option>
-      </select>
-      <div id="spinner" class="spinner"></div>
-    </h1>
+    <h1>COVID-19 Rate Estimates of Cases & Deaths</h1>
 
-    <p>Based on chosen rate data, select a country and fill in an estimated count or date and it will calculate the other value</p>
+    <p>Based on chosen rate data, select a country and fill in either estimated count or date, click "Calculate" and it will display the estimate other value. Calculation uses an average reproductive number over the last 10 days to compute either the count or date.</p>
+    <p>As you move estimate further into the future (> ~1wk), the results become blurry & won't be able to reliabily predict future counts or dates. Don't panic!</p>
+    <label for="measurementType">Source</label>
+    <select name="measurementType" id="measurementType">
+      <option value="cases">ECDC Reported Cases</option>
+      <option value="deaths">ECDC Reported Deaths</option>
+    </select>
+    <div id="spinner" class="spinner"></div>
     <label for="country">Country</label>
     <select name="country" id="country"></select>
     <label for="deathCount">Est count</label>
