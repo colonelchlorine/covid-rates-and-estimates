@@ -82,6 +82,7 @@
   </body>
   <script>
     async function getCovidData() {
+      const CACHE_DURATION_SEC = 60;
       let url = "";
       switch (measurementType) {
         case "cases":
@@ -91,12 +92,26 @@
           url = "https://covid.ourworldindata.org/data/ecdc/total_deaths.csv";
           break;
         default:
-          debugger;
+          console.error("Not sure what measurementType: " + measurementType);
+          alert("Measurement source not correctly identified");
+          return;
           break;
       }
-      let data = await fetch(url);
-      let text = await data.text();
-    
+
+      let cacheDate = sessionStorage.getItem("cache-date_" + measurementType);
+      let text = "";
+      if (cacheDate && cacheDate > new Date().toISOString()) {
+        text = sessionStorage.getItem(measurementType);
+      } else {
+        let data = await fetch(url);
+        text = await data.text();
+        sessionStorage.setItem(measurementType, text);
+
+        let expiryDate = new Date();
+        expiryDate.setSeconds(expiryDate.getSeconds() + CACHE_DURATION_SEC);
+        sessionStorage.setItem("cache-date_" + measurementType, expiryDate.toISOString());
+      }
+
       let arr = text.split("\n").map(r => r.split(","));
       let arr_trans = arr[0].map((r, i) => arr.map(c => c[i]));
     
@@ -136,7 +151,7 @@
 
           deathCountEl.value = parseInt(lastCount * (avgRate ** numDays));
       } else {
-          debugger;
+          console.error("Not sure what was lastModifiedEl: " + lastModifiedEl);
       }
     }
 
@@ -211,7 +226,7 @@
     calculateEl.addEventListener("click", calculate);
     countryEl.addEventListener("change", () => {
       defaultEstimate();
-      debugger;
+      
       // Redisplay charts with only selected country
       totals.forEach(d => {
           if (d.name == countryEl.value) { d.visible = true; return; }
