@@ -107,127 +107,127 @@
       }, {});
     }
 
-  let dt;
-  let totals = [];
-  let rates = [];
-  let lastModifiedEl = "deathCount";
-  let measurementType = "cases";
-  const MAX_DAYS_BACK = 10;
+    let dt;
+    let totals = [];
+    let rates = [];
+    let lastModifiedEl = "deathCount";
+    let measurementType = "cases";
+    const MAX_DAYS_BACK = 10;
 
-  function calculate() {
-    let countryRates = rates.find(d => d.name === countryEl.value);
-    let countryCounts = totals.find(d => d.name === countryEl.value);
-    let avgRate = countryRates.y.slice(-MAX_DAYS_BACK).reduce((a, c) => a += c, 0) / MAX_DAYS_BACK;
-    let lastDate = new Date(dt[dt.length - 1]);
-    let lastCount = countryCounts.y[countryCounts.y.length - 1];
+    function calculate() {
+      let countryRates = rates.find(d => d.name === countryEl.value);
+      let countryCounts = totals.find(d => d.name === countryEl.value);
+      let avgRate = countryRates.y.slice(-MAX_DAYS_BACK).reduce((a, c) => a += c, 0) / MAX_DAYS_BACK;
+      let lastDate = new Date(dt[dt.length - 1]);
+      let lastCount = countryCounts.y[countryCounts.y.length - 1];
 
-    if (lastModifiedEl === "deathCount") {
-        // Find date
-        let numDays = ((Math.log(deathCountEl.value) - Math.log(lastCount))/Math.log(avgRate));
+      if (lastModifiedEl === "deathCount") {
+          // Find date
+          let numDays = ((Math.log(deathCountEl.value) - Math.log(lastCount))/Math.log(avgRate));
 
-        let newDate = new Date(lastDate);
-        newDate.setUTCDate(newDate.getUTCDate() + numDays);
-        whenEl.value = newDate.toISOString().split("T")[0];
+          let newDate = new Date(lastDate);
+          newDate.setUTCDate(newDate.getUTCDate() + numDays);
+          whenEl.value = newDate.toISOString().split("T")[0];
 
-    } else if (lastModifiedEl === "when") {
-        // Find count
-        let newDate = new Date(whenEl.value);
-        let numDays = parseInt((newDate - lastDate)/(24*3600*1000));
+      } else if (lastModifiedEl === "when") {
+          // Find count
+          let newDate = new Date(whenEl.value);
+          let numDays = parseInt((newDate - lastDate)/(24*3600*1000));
 
-        deathCountEl.value = parseInt(lastCount * (avgRate ** numDays));
-    } else {
-        debugger;
+          deathCountEl.value = parseInt(lastCount * (avgRate ** numDays));
+      } else {
+          debugger;
+      }
     }
-  }
 
-  function defaultEstimate() {
-    let countryEst = totals.find(d => d.name === countryEl.value);
-    deathCountEl.value = countryEst.y[countryEst.y.length - 1];
-    whenEl.value = dt[dt.length - 1];
-  }
+    function defaultEstimate() {
+      let countryEst = totals.find(d => d.name === countryEl.value);
+      deathCountEl.value = countryEst.y[countryEst.y.length - 1];
+      whenEl.value = dt[dt.length - 1];
+    }
 
-  function lastModified(e) {
-    lastModifiedEl = e.currentTarget.id;
-  }
+    function lastModified(e) {
+      lastModifiedEl = e.currentTarget.id;
+    }
 
-  function processData() {
-    setLoadingState(true);
-    measurementType = measurementTypeEl.options[measurementTypeEl.selectedIndex].value;
-    getCovidData().then(data => {
-        data.date.pop();
-        dt = data.date;
-        totals = [];
-        for (let country in data) {
-        if (country === "date") { continue; }
+    function processData() {
+      setLoadingState(true);
+      measurementType = measurementTypeEl.options[measurementTypeEl.selectedIndex].value;
+      getCovidData().then(data => {
+          data.date.pop();
+          dt = data.date;
+          totals = [];
+          for (let country in data) {
+          if (country === "date") { continue; }
 
-        // Build data set
-        totals.push({
-            type: "scatter",
-            name: country,
-            x: dt,
-            y: data[country].slice(0, -1)
-        });
+          // Build data set
+          totals.push({
+              type: "scatter",
+              name: country,
+              x: dt,
+              y: data[country].slice(0, -1)
+          });
 
-        // Update select box
-        let opt = document.createElement("option");
-        opt.value = country;
-        opt.innerHTML = country;
-        countryEl.appendChild(opt);
-        }
+          // Update select box
+          let opt = document.createElement("option");
+          opt.value = country;
+          opt.innerHTML = country;
+          countryEl.appendChild(opt);
+          }
 
-        // Set default estimate values for calculation
-        defaultEstimate();
+          // Set default estimate values for calculation
+          defaultEstimate();
 
-        rates = totals.map(s => {
-        return { 
-            ...s,
-            x: s.x.slice(0, -1),
-            y: s.y.map((d, i) => {
-                return parseFloat(s.y[i+1]) / parseFloat(s.y[i]) || 0;
-            }).slice(0, -1)
-        };
-        });
+          rates = totals.map(s => {
+          return { 
+              ...s,
+              x: s.x.slice(0, -1),
+              y: s.y.map((d, i) => {
+                  return parseFloat(s.y[i+1]) / parseFloat(s.y[i]) || 0;
+              }).slice(0, -1)
+          };
+          });
 
-        setLoadingState(false);
-        Plotly.newPlot("totalChart", totals, {title: "Covid " + measurementType + " by country"});
-        Plotly.newPlot("rateChart", rates, {title: "Covid " + measurementType + " rate by country"});
-    })
-  }
+          setLoadingState(false);
+          Plotly.newPlot("totalChart", totals, {title: "Covid " + measurementType + " by country"});
+          Plotly.newPlot("rateChart", rates, {title: "Covid " + measurementType + " rate by country"});
+      })
+    }
 
-  function setLoadingState(isLoading) {
-    spinnerEl.style.display = isLoading ? "inline-block" : "none";
-    countryEl.disabled = isLoading;
-    deathCountEl.disabled = isLoading;
-    whenEl.disabled = isLoading;
-    calculate.disabled = isLoading;
-  }
+    function setLoadingState(isLoading) {
+      spinnerEl.style.display = isLoading ? "inline-block" : "none";
+      countryEl.disabled = isLoading;
+      deathCountEl.disabled = isLoading;
+      whenEl.disabled = isLoading;
+      calculate.disabled = isLoading;
+    }
 
-  let countryEl = document.getElementById("country");
-  let deathCountEl = document.getElementById("deathCount");
-  let whenEl = document.getElementById("when");
-  let calculateEl = document.getElementById("calculate");
-  let measurementTypeEl = document.getElementById("measurementType");
-  let spinnerEl = document.getElementById("spinner");
-  calculateEl.addEventListener("click", calculate);
-  countryEl.addEventListener("change", () => {
-    defaultEstimate();
-    debugger;
-    // Redisplay charts with only selected country
-    totals.forEach(d => {
-        if (d.name == countryEl.value) { d.visible = true; return; }
-        d.visible = countryEl.value !== "World" ? "legendonly" : true;
+    let countryEl = document.getElementById("country");
+    let deathCountEl = document.getElementById("deathCount");
+    let whenEl = document.getElementById("when");
+    let calculateEl = document.getElementById("calculate");
+    let measurementTypeEl = document.getElementById("measurementType");
+    let spinnerEl = document.getElementById("spinner");
+    calculateEl.addEventListener("click", calculate);
+    countryEl.addEventListener("change", () => {
+      defaultEstimate();
+      debugger;
+      // Redisplay charts with only selected country
+      totals.forEach(d => {
+          if (d.name == countryEl.value) { d.visible = true; return; }
+          d.visible = countryEl.value !== "World" ? "legendonly" : true;
+      });
+      rates.forEach(r => {
+          if (r.name == countryEl.value) { r.visible = true; return; }
+          r.visible = countryEl.value !== "World" ? "legendonly" : true;
+      });
+      Plotly.react("totalChart", totals, {title: "Covid " + measurementType + " by country"});
+      Plotly.react("rateChart", rates, {title: "Covid " + measurementType + " rate by country"});
     });
-    rates.forEach(r => {
-        if (r.name == countryEl.value) { r.visible = true; return; }
-        r.visible = countryEl.value !== "World" ? "legendonly" : true;
-    });
-    Plotly.react("totalChart", totals, {title: "Covid " + measurementType + " by country"});
-    Plotly.react("rateChart", rates, {title: "Covid " + measurementType + " rate by country"});
-  });
-  deathCountEl.addEventListener("change", lastModified);
-  whenEl.addEventListener("change", lastModified);
-  measurementTypeEl.addEventListener("change", processData);
+    deathCountEl.addEventListener("change", lastModified);
+    whenEl.addEventListener("change", lastModified);
+    measurementTypeEl.addEventListener("change", processData);
 
-  processData();
+    processData();
   </script>
 </html>
